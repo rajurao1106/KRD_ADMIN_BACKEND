@@ -1,0 +1,34 @@
+# dependencies
+node_modules
+/.pnp
+.pnp.js
+
+# environment variables
+.env
+.env.local
+.env.production
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+.kiro
+
+# uploads (large binary files)
+/public/uploads/**/*
+!/public/uploads/.gitkeep
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
