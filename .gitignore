@@ -19,7 +19,7 @@ node_modules
 
 # uploads (large binary files)
 # /public/uploads/**/*
-!/public/uploads/.gitkeep
+# !/public/uploads/.gitkeep
 
 # debug
 npm-debug.log*
