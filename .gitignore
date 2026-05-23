@@ -18,7 +18,7 @@ node_modules
 .kiro
 
 # uploads (large binary files)
-/public/uploads/**/*
+# /public/uploads/**/*
 !/public/uploads/.gitkeep
 
 # debug
