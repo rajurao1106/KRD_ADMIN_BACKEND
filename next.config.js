@@ -15,6 +15,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "krd-admin-backend-five.vercel.app",
       },
+       {
+        protocol: "https",
+        hostname: "krd-admin-backend-five",
+      },
       
     ],
   },
