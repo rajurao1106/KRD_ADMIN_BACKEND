@@ -11,6 +11,11 @@ const nextConfig = {
         protocol: "http",
         hostname: "localhost",
       },
+       {
+        protocol: "https",
+        hostname: "krd-admin-backend-five.vercel.app",
+      },
+      
     ],
   },
   async headers() {
