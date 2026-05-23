@@ -25,13 +25,12 @@ export const PUT = withAuth(async function(request, { params }) {
     let data = {}
     let newImageUrls = null
     let categoryIds = null
-    
+
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData()
       const imageFiles = formData.getAll('images')
-      
+
       if (imageFiles.some(f => f && f.size > 0)) {
-        // Delete old images
         const old = await query('SELECT images, featured_image FROM products WHERE id = ?', [params.id])
         if (old.length) {
           try {
@@ -39,7 +38,7 @@ export const PUT = withAuth(async function(request, { params }) {
             if (Array.isArray(oldImages)) oldImages.forEach(img => deleteFile(img))
           } catch { /* ignore bad JSON */ }
         }
-        
+
         newImageUrls = []
         for (const file of imageFiles) {
           if (file && file.size > 0) {
@@ -48,17 +47,16 @@ export const PUT = withAuth(async function(request, { params }) {
           }
         }
       }
-      
-      // Get category_ids
+
       const categoryIdsRaw = formData.get('category_ids') || ''
       if (categoryIdsRaw) {
         try { categoryIds = JSON.parse(categoryIdsRaw) } catch { categoryIds = categoryIdsRaw.split(',').filter(Boolean) }
       }
-      
-      const fields = ['category_id', 'name', 'slug', 'short_description', 'description', 
+
+      const fields = ['category_id', 'name', 'slug', 'short_description', 'description',
         'price', 'old_price', 'sku', 'stock_quantity', 'weight', 'volume',
         'is_featured', 'is_new', 'is_active', 'sort_order', 'meta_title', 'meta_description']
-      
+
       fields.forEach(f => {
         const val = formData.get(f)
         if (val !== null && val !== 'undefined') data[f] = val
@@ -71,48 +69,51 @@ export const PUT = withAuth(async function(request, { params }) {
       }
       data = body
     }
-    
+
     if (newImageUrls) {
       data.images = JSON.stringify(newImageUrls)
       data.featured_image = newImageUrls[0] || null
     }
 
-    // Update primary category_id from categoryIds if provided
     if (categoryIds && categoryIds.length > 0) {
       data.category_id = categoryIds[0]
     }
-    
+
     const setClauses = []
     const values = []
-    
+
     Object.entries(data).forEach(([key, val]) => {
       if (val !== undefined && val !== 'undefined') {
         setClauses.push(`${key} = ?`)
         values.push(val)
       }
     })
-    
+
     if (setClauses.length) {
       values.push(params.id)
       await query(`UPDATE products SET ${setClauses.join(', ')} WHERE id = ?`, values)
     }
 
-    // Update category mappings if provided
-    if (categoryIds !== null) {
-      // Remove old mappings
-      await query('DELETE FROM product_category_map WHERE product_id = ?', [params.id])
-      // Insert new mappings
-      for (const catId of categoryIds) {
-        if (catId) {
-          await query('INSERT IGNORE INTO product_category_map (product_id, category_id) VALUES (?, ?)', [params.id, catId])
+    try {
+      if (categoryIds !== null) {
+        await query('DELETE FROM product_category_map WHERE product_id = ?', [params.id])
+        for (const catId of categoryIds) {
+          if (catId) {
+            await query(
+              'INSERT IGNORE INTO product_category_map (product_id, category_id) VALUES (?, ?)',
+              [params.id, catId]
+            )
+          }
         }
       }
+    } catch (catErr) {
+      console.warn('product_category_map update skipped:', catErr.message)
     }
-    
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Product update error:', error)
-    return NextResponse.json({ error: 'Failed to update product' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to update product', detail: error.message }, { status: 500 })
   }
 })
 
@@ -125,11 +126,17 @@ export const DELETE = withAuth(async function(request, { params }) {
         if (Array.isArray(images)) images.forEach(img => deleteFile(img))
       } catch { /* ignore bad JSON */ }
     }
-    await query('DELETE FROM product_category_map WHERE product_id = ?', [params.id])
+
+    try {
+      await query('DELETE FROM product_category_map WHERE product_id = ?', [params.id])
+    } catch (catErr) {
+      console.warn('product_category_map delete skipped:', catErr.message)
+    }
+
     await query('DELETE FROM products WHERE id = ?', [params.id])
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Product delete error:', error)
-    return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete product', detail: error.message }, { status: 500 })
   }
 })

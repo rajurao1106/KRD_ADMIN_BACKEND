@@ -23,8 +23,8 @@ export const PUT = withAuth(async function(request, { params }) {
       const formData = await request.formData()
       const imageFile = formData.get('image')
       
-      if (imageFile && imageFile.size > 0) {
-        // Get old image to delete
+      // ✅ Guard with instanceof check
+      if (imageFile && imageFile instanceof File && imageFile.size > 0) {
         const old = await query('SELECT image_url FROM content_sections WHERE id = ?', [params.id])
         if (old.length && old[0].image_url) deleteFile(old[0].image_url)
         
@@ -39,10 +39,16 @@ export const PUT = withAuth(async function(request, { params }) {
       
       fields.forEach(f => {
         const val = formData.get(f)
-        if (val !== null && val !== 'undefined' && val !== 'null') data[f] = val
+        if (val !== null && val !== 'undefined' && val !== 'null') {
+          // ✅ Coerce boolean-like fields to integers
+          if (f === 'is_active') {
+            data[f] = val === 'true' || val === '1' ? 1 : 0
+          } else {
+            data[f] = val
+          }
+        }
       })
 
-      // Handle image_url from form if provided as URL string
       const imageUrlField = formData.get('image_url')
       if (imageUrlField && imageUrlField !== 'undefined' && imageUrlField !== 'null' && !data.image_url) {
         data.image_url = imageUrlField

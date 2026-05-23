@@ -14,16 +14,16 @@ async function migrate() {
   console.log('Connected to database...')
 
   // Create junction table
-  await connection.execute(`
-    CREATE TABLE IF NOT EXISTS product_category_map (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      product_id INT NOT NULL,
-      category_id INT NOT NULL,
-      UNIQUE KEY unique_pc (product_id, category_id),
-      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-      FOREIGN KEY (category_id) REFERENCES product_categories(id) ON DELETE CASCADE
-    )
-  `)
+ await connection.execute(`
+  CREATE TABLE IF NOT EXISTS product_category_map (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    category_id INT NOT NULL,
+    UNIQUE KEY unique_pc (product_id, category_id),
+    INDEX idx_product (product_id),
+    INDEX idx_category (category_id)
+  )
+`)
   console.log('✓ product_category_map table created')
 
   // Migrate existing category_id data
